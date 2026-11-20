@@ -22,6 +22,7 @@
   --box-fg: #FFFFFF;
   --wa: #128C4A; --wa-fg: #FFFFFF;
   --promo: #4A2C1A; --promo-fg: #F6EEE1;
+  --cam-bg: #0F0C0A; --cam-fg: #F6EEE1;
   --display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", system-ui, sans-serif;
   --body: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
@@ -136,6 +137,27 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
 .pie a { color: var(--fg); font-weight: 800; }
 .num-tel { font-weight: 800; color: var(--fg); user-select: all; }
 
+
+/* pantalla de cámara: oscura en los dos temas, como el visor de una cámara */
+.pantalla {
+  position: fixed; inset: 0; z-index: 40; background: var(--cam-bg); color: var(--cam-fg); display: flex; flex-direction: column; gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) calc(14px + env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+}
+.pantalla-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cajas.mini span { font-size: 20px; padding: 4px 8px 2px; background: var(--cam-fg); color: var(--cam-bg); }
+.pantalla-visor { flex: 1; min-height: 0; position: relative; }
+.pantalla-visor canvas { position: absolute; inset: 0; margin: auto; max-width: 100%; max-height: 100%; border-radius: 12px; cursor: pointer; touch-action: manipulation; }
+.pantalla-pie { display: grid; gap: 10px; justify-items: center; }
+.pantalla .estado { margin: 0; text-align: center; font-weight: 800; font-size: 17px; color: var(--cam-fg); }
+.pantalla .estado small { display: block; font-weight: 600; font-size: 13.5px; opacity: .75; }
+.btn.claro { background: var(--cam-fg); color: var(--cam-bg); border-color: var(--cam-fg); width: 100%; max-width: 420px; }
+.otras { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; }
+.link { position: relative; background: none; border: none; color: var(--cam-fg); font: 700 14.5px/1.2 var(--body); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; padding: 8px 2px; }
+.link input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.link:focus-visible, .link:focus-within { outline: 2px solid var(--cam-fg); outline-offset: 2px; }
+.link.ocupado { opacity: .5; pointer-events: none; }
+#re-escanear { justify-self: start; }
+
 /* barra fija del pedido */
 .barra {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--box); color: var(--box-fg);
@@ -147,6 +169,30 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
 @media (prefers-reduced-motion: no-preference) { .item.lleva { transition: box-shadow .15s; } }
 </style>
 
+<div class="pantalla" id="pantalla" hidden>
+  <div class="pantalla-top">
+    <div class="cajas mini" aria-label="Cara Negra"><span>CARA</span><span>NEGRA</span></div>
+    <button class="link" id="cerrar-pantalla" type="button">Ver la carta ›</button>
+  </div>
+  <div class="pantalla-visor">
+    <canvas id="lienzo" width="640" height="784" aria-label="Cámara con la carta encima del clip"></canvas>
+    <video id="video" playsinline muted autoplay style="position:absolute;width:2px;height:2px;opacity:0;pointer-events:none"></video>
+  </div>
+  <div class="pantalla-pie">
+    <p class="estado" id="estado">Encendiendo la cámara…</p>
+    <button class="btn claro" id="abrir-carta" type="button" hidden>Abrir la carta y pedir</button>
+    <button class="btn claro" id="btn-vivo" type="button" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l1.6-2.2h6.8L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.6"/></svg>
+      <span id="vivo-txt">Encender cámara</span>
+    </button>
+    <div class="otras">
+      <label class="link" id="btn-camara">Tomar foto<input id="in-camara" type="file" accept="image/*" capture="environment"></label>
+      <label class="link" id="btn-galeria">Elegir foto<input id="in-galeria" type="file" accept="image/*"></label>
+      <button class="link" id="sin-escanear" type="button">Pedir sin escanear</button>
+    </div>
+  </div>
+</div>
+
 <div class="wrap">
   <p class="muestra">Muestra para presentar a Cara Negra. No es la página oficial del restaurante. Los pedidos se arman aquí y se envían al WhatsApp de pedidos del restaurante.</p>
 
@@ -155,31 +201,10 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
     <p>Hamburguesas de cordero candaraveño · Tacna</p>
   </header>
 
-  <section class="escaneo" aria-label="Escanear el clip">
-    <h2>Escanea tu clip</h2>
-    <div class="acciones">
-      <button class="btn" id="btn-vivo" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><circle cx="12" cy="12" r="3.2"/></svg>
-        <span id="vivo-txt">Escanear en vivo</span>
-      </button>
-      <label class="btn sec" id="btn-camara">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l1.6-2.2h6.8L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.6"/></svg>
-        Tomar foto del clip
-        <input id="in-camara" type="file" accept="image/*" capture="environment">
-      </label>
-      <label class="btn sec" id="btn-galeria">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="m4 17 5-5 4 4 3-3 4 4"/><circle cx="15.5" cy="9.5" r="1.4"/></svg>
-        Elegir foto
-        <input id="in-galeria" type="file" accept="image/*">
-      </label>
-    </div>
-    <div class="visor">
-      <canvas id="lienzo" width="640" height="784" aria-label="Foto del clip con la carta encima"></canvas>
-      <video id="video" playsinline muted autoplay style="position:absolute;width:2px;height:2px;opacity:0;pointer-events:none"></video>
-      <p class="estado" id="estado">Leyendo el clip del ejemplo…</p>
-    </div>
-    <p class="consejo">Celular encima del clip, de frente y bien enfocado. Toca la carta para pedir. Si la cámara en vivo no abre, usa "Tomar foto del clip".</p>
-  </section>
+  <button class="btn" id="re-escanear" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><circle cx="12" cy="12" r="3.2"/></svg>
+    Escanear mi clip
+  </button>
 
   <section class="carta" id="carta" aria-label="Carta">
     <div class="carta-top">
@@ -930,7 +955,7 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(foto, 0, 0);
     for (const r of res) { ctx.lineWidth = Math.max(2, foto.width / 320); ctx.strokeStyle = '#F59E0B'; ctx.beginPath(); r.outer.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.stroke(); }
   }
-  lienzo.addEventListener('click', () => { if (escena) $('carta').scrollIntoView({ behavior: 'smooth' }); });
+  lienzo.addEventListener('click', () => { if (escena) cerrarPantalla(); });
 
   // ---------- escanear ----------
   let ocupado = false;
@@ -946,12 +971,12 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
       }
       const ok = res.filter(valido).sort((a, b) => b.px_mm - a.px_mm);
       if (ok.length) {
-        const r = ok[0]; if (!ejemplo) ponerClip(r.num);
+        const r = ok[0]; if (!ejemplo) { ponerClip(r.num); $('abrir-carta').hidden = false; }
         estado(ejemplo ? `Ejemplo: clip N.º ${r.num}` : `¡Clip N.º ${r.num}! Bienvenido a Cara Negra`, 'Toca la carta para elegir tu pedido');
         await mostrarCarta(prepararEscena(v.c, r));
       } else {
-        soloFoto(v.c, res);
-        estado(res.length ? 'Veo el clip, pero no alcanzo a leer sus rayas' : 'No encontré el clip en la foto', 'Prueba otra foto más de frente y enfocada. La carta igual está aquí abajo.');
+        soloFoto(v.c, res); $('abrir-carta').hidden = true;
+        estado(res.length ? 'Veo el clip, pero no alcanzo a leer sus rayas' : 'No encontré el clip en la foto', 'Prueba otra foto más de frente y enfocada, o pide sin escanear.');
       }
     } catch (e) {
       estado('No pude abrir esa imagen', 'Prueba con otra foto.');
@@ -960,10 +985,9 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
   // ---------- cámara en vivo (solo funciona en una página con candado, fuera de Claude) ----------
   const video = $('video'); let vivo = null;
   const suave = x => x <= 0 ? 0 : x >= 1 ? 1 : 1 + 2.2 * Math.pow(x - 1, 3) + 1.2 * Math.pow(x - 1, 2);
-  function rotuloVivo(on) { $('vivo-txt').textContent = on ? 'Detener cámara' : 'Escanear en vivo'; $('btn-vivo').classList.toggle('sec', on); }
+  function rotuloVivo(on) { $('btn-vivo').hidden = on; }
   async function iniciarVivo() {
-    if (vivo) { pararVivo(); return; }
-    if (ocupado) return;
+    if (vivo || ocupado) return;
     anim++;
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('sin cámara');
@@ -977,8 +1001,7 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
       estado('Apunta al clip', 'De frente, a unos 15 cm y enfocado');
       requestAnimationFrame(pintarVivo); cicloVivo();
     } catch (e) {
-      pararVivo();
-      estado('No pude abrir la cámara en vivo', 'Revisa el permiso de cámara del navegador, o usa "Tomar foto del clip".');
+      pararVivo(); sinCamara();
     }
   }
   function pararVivo() {
@@ -995,13 +1018,13 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
     if (ok.length) {
       const r = ok[0];
       if (Z.num === r.num || Z.previo === r.num) {          // dos lecturas iguales seguidas: confirmado
-        if (Z.num !== r.num) { Z.num = r.num; ponerClip(r.num); estado(`¡Clip N.º ${r.num}! Bienvenido a Cara Negra`, 'Toca la carta para elegir tu pedido'); }
+        if (Z.num !== r.num) { Z.num = r.num; ponerClip(r.num); estado(`¡Clip N.º ${r.num}! Bienvenido a Cara Negra`, 'Toca la carta para elegir tu pedido'); $('abrir-carta').hidden = false; }
         Z.E = Z.Eult = prepararEscena({ width: Z.w, height: Z.h }, r); Z.visto = ahora; escena = Z.E;
       } else if (!Z.num) estado('Leyendo el clip…', 'Mantén el celular quieto un momento');
       Z.previo = r.num;
     } else {
       Z.previo = null;
-      if (Z.num && ahora - Z.visto > 2500) { Z.E = null; Z.num = null; escena = null; estado('Buscando el clip…', 'Apunta al clip, de frente'); }
+      if (Z.num && ahora - Z.visto > 2500) { Z.E = null; Z.num = null; escena = null; estado('Buscando el clip…', 'Apunta al clip, de frente'); $('abrir-carta').hidden = !clip; }
       else if (!Z.num) estado(res.length ? 'Veo el clip, leyendo sus rayas…' : 'Buscando el clip…', 'De frente, a unos 15 cm y enfocado');
     }
     setTimeout(cicloVivo, 30);
@@ -1015,14 +1038,28 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
     else { lienzo.width === Z.w || (lienzo.width = Z.w); lienzo.height === Z.h || (lienzo.height = Z.h); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(video, 0, 0, Z.w, Z.h); }
     requestAnimationFrame(pintarVivo);
   }
+  async function sinCamara() {   // sin permiso o sin cámara (por ejemplo, dentro de Claude): ejemplo + otras opciones
+    await escanear(EJEMPLO, true);
+    estado('No pude encender la cámara', 'Arriba ves un ejemplo. Da permiso de cámara, toma una foto del clip o pide sin escanear.');
+    $('btn-vivo').hidden = false;
+  }
+  function abrirPantalla() {
+    $('pantalla').hidden = false; document.body.style.overflow = 'hidden'; $('abrir-carta').hidden = true;
+    estado('Encendiendo la cámara…', 'Apunta a tu clip CARA NEGRA'); iniciarVivo();
+  }
+  function cerrarPantalla() {
+    pararVivo(); anim++; $('pantalla').hidden = true; document.body.style.overflow = '';
+    window.scrollTo(0, Math.max(0, $('carta').getBoundingClientRect().top + window.scrollY - 8));
+  }
   $('btn-vivo').addEventListener('click', iniciarVivo);
-  document.addEventListener('visibilitychange', () => { if (document.hidden) pararVivo(); });
+  ['abrir-carta', 'sin-escanear', 'cerrar-pantalla'].forEach(id => $(id).addEventListener('click', cerrarPantalla));
+  $('re-escanear').addEventListener('click', abrirPantalla);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) pararVivo(); else if (!$('pantalla').hidden && !vivo && !ocupado && !escena) iniciarVivo();
+  });
 
   ['in-camara', 'in-galeria'].forEach(id => $(id).addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) escanear(f, false); }));
-  (async () => {
-    try { const im = await cargar(EJEMPLO); lienzo.width = im.width; lienzo.height = im.height; ctx.drawImage(im, 0, 0); } catch (e) {}
-    escanear(EJEMPLO, true);
-  })();
+  abrirPantalla();   // al entrar (por ejemplo, desde el enlace CARANEGRA.PE), la cámara se enciende sola
 })();
 </script>
 
