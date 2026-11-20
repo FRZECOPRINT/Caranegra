@@ -167,6 +167,33 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
 .barra b { font-family: var(--display); font-weight: 400; font-size: 22px; font-variant-numeric: tabular-nums; }
 .barra a { background: var(--box-fg); color: var(--box); text-decoration: none; font-weight: 800; border-radius: 999px; padding: 10px 18px; white-space: nowrap; }
 @media (prefers-reduced-motion: no-preference) { .item.lleva { transition: box-shadow .15s; } }
+
+/* funciones nuevas: cómo llegar, VIP dorado, sorteo, lo nuevo, acompañamientos */
+:root { --oro1: #EDD07A; --oro2: #B8892A; --oro-fg: #1B1209; }
+.acciones .btn.sec { border-color: var(--fg); }
+.promo.vip { background: linear-gradient(135deg, var(--oro1), var(--oro2)); color: var(--oro-fg); }
+.promo.vip small { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
+.promo.sorteo { background: var(--card); color: var(--fg); border: 2px dashed var(--accent); }
+.promo.sorteo b { color: var(--accent); }
+.promo.sorteo.gana { background: var(--accent); color: var(--card); border-style: solid; }
+.promo.sorteo.gana b { color: var(--card); }
+.promo .etq, .novedad .etq { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.novedad { background: var(--card); border: 2px solid var(--fg); border-radius: 14px; padding: 12px 12px 12px 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; }
+.novedad .etq { color: var(--accent); }
+.novedad > div { display: grid; gap: 2px; min-width: 0; }
+.novedad .btn { min-height: 44px; padding: 0 16px; font-size: 15px; }
+.acomp { display: grid; gap: 8px; border: 2px dashed var(--line); border-radius: 12px; padding: 10px 12px; }
+.acomp p { margin: 0; font-weight: 800; font-size: 14px; }
+.acomp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.acomp-chips .chip { border-color: var(--fg); }
+.barra-acomp { max-width: 640px; margin: 0 auto 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 800; font-size: 14px; }
+.barra-acomp .chip { background: var(--box-fg); color: var(--box); border-color: var(--box-fg); padding: 6px 12px; font-size: 13.5px; }
+.promo b span { font: inherit; }
+.barra-acomp .acomp-chips { flex-basis: 100%; }
+.barra-acomp .cerrar { margin-left: auto; background: none; border: none; color: var(--box-fg); font: 800 20px/1 var(--body); cursor: pointer; padding: 4px 8px; }
+.aviso a { color: var(--fg); font-weight: 800; }
+.demo { display: grid; gap: 6px; border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 6px; }
+.demo div { display: flex; flex-wrap: wrap; gap: 6px 14px; }
 </style>
 
 <div class="pantalla" id="pantalla" hidden>
@@ -194,17 +221,23 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
 </div>
 
 <div class="wrap">
-  <p class="muestra">Muestra para presentar a Cara Negra. No es la página oficial del restaurante. Los pedidos se arman aquí y se envían al WhatsApp de pedidos del restaurante.</p>
+  <p class="muestra">Muestra para presentar a Cara Negra. No es la página oficial del restaurante. Los pedidos se arman aquí y se envían al WhatsApp de pedidos del restaurante. "Lo nuevo", el clip VIP y el sorteo son ejemplos que el local puede activar o cambiar.</p>
 
   <header class="marca">
     <div class="cajas" aria-label="Cara Negra"><span>CARA</span><span>NEGRA</span></div>
     <p>Hamburguesas de cordero candaraveño · Tacna</p>
   </header>
 
-  <button class="btn" id="re-escanear" type="button">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><circle cx="12" cy="12" r="3.2"/></svg>
-    Escanear mi clip
-  </button>
+  <div class="acciones">
+    <button class="btn" id="re-escanear" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><circle cx="12" cy="12" r="3.2"/></svg>
+      Escanear mi clip
+    </button>
+    <a class="btn sec" id="como-llegar" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=Cara%20Negra%2C%20Av.%20Gregorio%20Albarrac%C3%ADn%20670%2C%20Tacna">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.4"/></svg>
+      Cómo llegar
+    </a>
+  </div>
 
   <section class="carta" id="carta" aria-label="Carta">
     <div class="carta-top">
@@ -213,11 +246,24 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
     </div>
     <div class="promo" id="bienvenida" hidden>
       <b>N.º <span id="bienvenida-num"></span></b>
-      <span>¡Bienvenido a Cara Negra! Tu clip ya está registrado en tu pedido. Elige lo que quieras y envíalo por WhatsApp.</span>
+      <span id="bienvenida-txt">¡Bienvenido a Cara Negra! Tu clip ya está registrado en tu pedido. Elige lo que quieras y envíalo por WhatsApp.</span>
+    </div>
+    <div class="promo sorteo" id="sorteo" hidden>
+      <b id="sorteo-num"></b>
+      <span><span class="etq" id="sorteo-etq">Sorteo de la semana</span><span id="sorteo-txt"></span></span>
     </div>
     <div class="promo" id="promo" hidden>
       <b>2 x 30</b>
       <span>Hoy es Jueves de Cara Negra: 2 hamburguesas de cordero candaraveño clásicas por S/ 30. Se descuenta solo en tu pedido.</span>
+    </div>
+    <div class="novedad" id="novedad" hidden>
+      <div>
+        <span class="etq">Lo nuevo</span>
+        <span class="item-n" id="nov-n"></span>
+        <span class="item-d" id="nov-d"></span>
+        <span class="item-p" id="nov-p"></span>
+      </div>
+      <button class="btn" id="nov-add" type="button">Agregar</button>
     </div>
     <nav class="tabs" id="tabs" aria-label="Secciones de la carta"></nav>
     <div id="secciones" class="carta"></div>
@@ -235,6 +281,10 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
     <h2>Tu pedido</h2>
     <p class="vacio" id="vacio">Aún no elegiste nada. Toca + en la carta para agregar.</p>
     <ul class="lineas" id="lineas"></ul>
+    <div class="acomp" id="acomp-pedido" hidden>
+      <p>¿Lo acompañas?</p>
+      <div class="acomp-chips" id="acomp-pedido-chips"></div>
+    </div>
     <div class="total" id="total" hidden><span>Total</span><span id="total-v">S/ 0.00</span></div>
 
     <div class="campo"><label for="nombre">Tu nombre</label><input id="nombre" autocomplete="name" placeholder="Para saber a quién entregar"></div>
@@ -242,6 +292,7 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
       <label><input type="radio" name="modo" id="modo-recojo" value="recojo" checked> Recojo en el local</label>
       <label><input type="radio" name="modo" id="modo-delivery" value="delivery"> Delivery</label>
     </div>
+    <p class="aviso" id="recojo-info">Recoges en Av. Gregorio Albarracín 670 · <a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&amp;destination=Cara%20Negra%2C%20Av.%20Gregorio%20Albarrac%C3%ADn%20670%2C%20Tacna">Cómo llegar</a></p>
     <div id="bloque-delivery" hidden class="pedido-delivery" style="display:grid;gap:12px">
       <div class="campo"><label for="direccion">Dirección</label><input id="direccion" autocomplete="street-address" placeholder="Calle, número, urbanización"></div>
       <div class="campo"><label for="referencia">Referencia</label><input id="referencia" placeholder="Por ejemplo: frente al parque"></div>
@@ -263,10 +314,19 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
     <span>Av. Gregorio Albarracín 670 – Tacna · <a href="https://www.google.com/maps/search/?api=1&query=Cara%20Negra%20Av.%20Gregorio%20Albarrac%C3%ADn%20670%20Tacna" target="_blank" rel="noopener">Cómo llegar</a></span>
     <span>Pedidos por WhatsApp: <span class="num-tel">986 817 255</span></span>
     <span><a href="https://www.instagram.com/caranegratacna/" target="_blank" rel="noopener">Instagram</a> · <a href="https://www.facebook.com/caranegratacna/" target="_blank" rel="noopener">Facebook</a></span>
+    <div class="demo">
+      <span>Para la presentación (ejemplos):</span>
+      <div><a href="?c=901">Clip VIP dorado</a><a href="?c=1&amp;sorteo=1">Sorteo activado</a><a href="?c=25&amp;sorteo=1">Clip ganador</a><a href="?c=1">Clip normal</a></div>
+    </div>
   </footer>
 </div>
 
 <div class="barra" id="barra" hidden>
+  <div class="barra-acomp" id="acomp-barra" hidden>
+    <span>¿Lo acompañas?</span>
+    <button class="cerrar" id="acomp-cerrar" type="button" aria-label="No, gracias">×</button>
+    <span class="acomp-chips" id="acomp-barra-chips"></span>
+  </div>
   <div class="barra-in">
     <span><span id="barra-n">0 productos</span> · <b id="barra-t">S/ 0.00</b></span>
     <a href="#pedido" id="barra-ir">Ver pedido</a>
@@ -730,9 +790,20 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
   const CREMAS = ['Pichicateada (de la casa)', 'Mayonesa', 'Ketchup', 'Mostaza', 'BBQ', 'Chimichurri', 'Rocoto diablo'];
   const ITEMS = {}; CARTA.forEach(c => c.items.forEach(i => ITEMS[i.id] = i));
 
+  // ---------- funciones que el local puede activar o cambiar (ejemplos para la presentación) ----------
+  const AJUSTES = {
+    vip: { desde: 900, hasta: 999, beneficio: 'Atención preferente y eres de los primeros en probar nuestros platos nuevos.' },
+    novedad: { item: 'cajachina' },                       // plato que se muestra como "Lo nuevo" (null = no mostrar)
+    sorteo: { activo: false, ganador: 25, premio: 'una hamburguesa de cordero candaraveño' },
+    acompanar: { papas: ['a-papas'], bebidas: ['b-vidrio', 'b-600'] },
+  };
+  const QS = new URLSearchParams(location.search);
+  if (QS.get('sorteo') === '1') AJUSTES.sorteo.activo = true;   // solo para mostrarlo en la presentación
+  const CORTO = { 'a-papas': 'Papas', 'b-vidrio': 'Gaseosa de vidrio', 'b-600': 'Gaseosa 600 ml' };
+
   const $ = id => document.getElementById(id);
   const soles = v => 'S/ ' + v.toFixed(2);
-  const cant = {}; const cremas = new Set(); let clip = null;
+  const cant = {}; const cremas = new Set(); let clip = null, vip = false, ganador = false, acompCerrado = false;
 
   // jueves en Tacna (hora de Lima)
   const esJueves = (() => { try { return new Intl.DateTimeFormat('en-US', { timeZone: 'America/Lima', weekday: 'short' }).format(new Date()) === 'Thu'; } catch (e) { return new Date().getDay() === 4; } })();
@@ -781,7 +852,8 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
     return { lineas, sub, n, desc, total: sub - desc };
   }
   function mensaje(c) {
-    const L = [`Hola Cara Negra, quiero hacer un pedido${clip ? ` (clip N.º ${clip})` : ''}:`];
+    const L = [`Hola Cara Negra, quiero hacer un pedido${clip ? ` (clip ${vip ? 'VIP ' : ''}N.º ${clip})` : ''}:`];
+    if (ganador) L.push(`¡Mi clip ganó el sorteo de la semana! Premio: ${AJUSTES.sorteo.premio}.`);
     c.lineas.forEach(l => L.push(`• ${l.q} × ${l.i.n} – ${soles(l.v)}`));
     if (c.desc) L.push(`Jueves de Cara Negra 2 x 30: – ${soles(c.desc)}`);
     L.push(`Total: ${soles(c.total)}`);
@@ -806,6 +878,8 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
     if (c.desc) { const li = document.createElement('li'); li.className = 'desc'; const a = document.createElement('span'); a.textContent = 'Jueves 2 x 30'; const b = document.createElement('span'); b.textContent = '– ' + soles(c.desc); li.append(a, b); ul.append(li); }
     $('vacio').hidden = c.n > 0; $('total').hidden = !c.n; $('total-v').textContent = soles(c.total);
     $('barra').hidden = !c.n; $('barra-n').textContent = c.n === 1 ? '1 producto' : c.n + ' productos'; $('barra-t').textContent = soles(c.total);
+    $('recojo-info').hidden = !$('modo-recojo').checked;
+    pintarAcomp();
     const txt = mensaje(c); $('vista').textContent = txt;
     const f = falta(c), a = $('enviar');
     a.href = `https://wa.me/${WA}?text=${encodeURIComponent(txt)}`;
@@ -816,9 +890,56 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
   ['modo-recojo', 'modo-delivery'].forEach(id => $(id).addEventListener('change', () => { $('bloque-delivery').hidden = !$('modo-delivery').checked; actualizar(); }));
   actualizar();
 
-  function ponerClip(n) {
-    clip = n; const ch = $('clip-chip'); ch.hidden = !n; if (n) ch.textContent = `Pedido con tu clip N.º ${n}`; actualizar();
+  // ---------- acompañamientos: si pide un plato y no tiene papas o bebida, se lo sugerimos ----------
+  function sugeridos() {
+    const hay = cat => CARTA.find(x => x.id === cat).items.some(i => cant[i.id]);
+    const s = [];
+    if (hay('sandwiches') && !hay('salchipapas')) AJUSTES.acompanar.papas.forEach(id => { if (!cant[id]) s.push(id); });
+    if ((hay('sandwiches') || hay('salchipapas')) && !hay('bebidas')) s.push(...AJUSTES.acompanar.bebidas);
+    return s;
   }
+  function chipsAcomp(cont, ids, corto) {
+    cont.textContent = '';
+    ids.forEach(id => {
+      const i = ITEMS[id], b = document.createElement('button'); b.type = 'button'; b.className = 'chip';
+      b.textContent = `+ ${corto ? CORTO[id] || i.n : i.n} · ${soles(i.p)}`; b.setAttribute('aria-label', `Agregar ${i.n}`);
+      b.onclick = () => cambiar(id, +1); cont.append(b);
+    });
+  }
+  function pintarAcomp() {
+    const s = sugeridos(); if (!s.length) acompCerrado = false;
+    $('acomp-pedido').hidden = !s.length; chipsAcomp($('acomp-pedido-chips'), s, false);
+    $('acomp-barra').hidden = !s.length || acompCerrado; chipsAcomp($('acomp-barra-chips'), s.slice(0, 2), true);
+  }
+  $('acomp-cerrar').addEventListener('click', () => { acompCerrado = true; $('acomp-barra').hidden = true; });
+
+  // ---------- "Lo nuevo" ----------
+  if (AJUSTES.novedad && ITEMS[AJUSTES.novedad.item]) {
+    const i = ITEMS[AJUSTES.novedad.item];
+    $('nov-n').textContent = i.n; $('nov-d').textContent = i.d || ''; $('nov-p').textContent = soles(i.p);
+    $('nov-add').setAttribute('aria-label', 'Agregar ' + i.n);
+    $('nov-add').onclick = () => { cambiar(i.id, +1); $('nov-add').textContent = 'Agregar otra'; };
+    $('novedad').hidden = false;
+  }
+
+  // ---------- sorteo semanal (apagado salvo que el local lo active) ----------
+  function pintarSorteo() {
+    const S = AJUSTES.sorteo; $('sorteo').hidden = !S.activo; if (!S.activo) return;
+    ganador = clip === S.ganador; $('sorteo').classList.toggle('gana', ganador);
+    $('sorteo-num').textContent = 'N.º ' + S.ganador;
+    $('sorteo-etq').textContent = ganador ? '¡Tu clip ganó el sorteo!' : 'Sorteo de la semana';
+    $('sorteo-txt').textContent = ganador
+      ? `Ganaste ${S.premio}. Haz tu pedido y el premio va anotado en tu mensaje.`
+      : `Si tu clip tiene este número, ganaste ${S.premio}. Guarda tu clip: cada semana hay un nuevo número.`;
+  }
+
+  function ponerClip(n) {
+    clip = n; const ch = $('clip-chip'); ch.hidden = !n;
+    vip = !!n && n >= AJUSTES.vip.desde && n <= AJUSTES.vip.hasta;
+    if (n) ch.textContent = `Pedido con tu clip ${vip ? 'VIP ' : ''}N.º ${n}`;
+    pintarSorteo(); actualizar();
+  }
+  pintarSorteo();
 
   // ---------- lector (en segundo plano) ----------
   let worker = null; const pend = new Map(); let seq = 0;
@@ -1067,6 +1188,12 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
   const cURL = parseInt(new URLSearchParams(location.search).get('c'), 10);
   if (cURL > 0 && cURL < 100000) {
     ponerClip(cURL); $('bienvenida-num').textContent = cURL; $('bienvenida').hidden = false;
+    if (vip) {
+      $('bienvenida').classList.add('vip');
+      const t = $('bienvenida-txt'); t.textContent = '';
+      const s = document.createElement('small'); s.textContent = 'Cliente VIP · Clip dorado';
+      t.append(s, `Gracias por ser cliente de la casa. Tu beneficio: ${AJUSTES.vip.beneficio}`);
+    }
   } else abrirPantalla();   // sin QR: la cámara se enciende sola para leer el clip
 })();
 </script>
