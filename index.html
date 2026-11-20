@@ -145,7 +145,8 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
 }
 .pantalla-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .cajas.mini span { font-size: 20px; padding: 4px 8px 2px; background: var(--cam-fg); color: var(--cam-bg); }
-.pantalla-visor { flex: 1; min-height: 0; position: relative; }
+.pantalla-visor { flex: 1; min-height: 0; position: relative; overflow: hidden; }
+.carta3d { position: absolute; left: 0; top: 0; max-width: none; transform-origin: 0 0; border-radius: 6px; box-shadow: 0 18px 48px rgba(0,0,0,.6); cursor: pointer; will-change: transform; backface-visibility: hidden; }
 .pantalla-visor canvas { position: absolute; inset: 0; margin: auto; max-width: 100%; max-height: 100%; border-radius: 12px; cursor: pointer; touch-action: manipulation; }
 .pantalla-pie { display: grid; gap: 10px; justify-items: center; }
 .pantalla .estado { margin: 0; text-align: center; font-weight: 800; font-size: 17px; color: var(--cam-fg); }
@@ -1135,19 +1136,69 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
     ctx.save(); ctx.lineWidth = Math.max(2, E.foto.width / 300); ctx.strokeStyle = 'rgba(27,23,20,.9)';
     ctx.beginPath(); [[-1, 1], [1, 1], [1, -1], [-1, -1]].forEach(([a, b], i) => { const [x, y] = punto(a, b); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.closePath(); ctx.stroke(); ctx.restore();
   }
-  async function mostrarCarta(E) {
+  // ---------- la carta flotante: una imagen con perspectiva (CSS 3D), nítida y anclada al clip ----------
+  // Sale echada sobre el clip, se levanta y queda parada de frente, del alto de la pantalla.
+  // En vivo queda fija en el espacio: al inclinar el celular hacia arriba o abajo se recorre la carta (giroscopio).
+  const capa = new Image(); capa.className = 'carta3d'; capa.alt = 'Carta de Cara Negra'; capa.hidden = true; capa.src = CARTA_IMG;
+  lienzo.parentNode.append(capa);
+  capa.addEventListener('click', () => { if (escena) cerrarPantalla(); });
+  listaCarta.then(() => { capa.style.width = imgCarta.width + 'px'; capa.style.height = imgCarta.height + 'px'; });
+  let capaFija = null;   // vuelve a dibujar la carta quieta si cambia el tamaño de la pantalla
+  window.addEventListener('resize', () => { if (capaFija && !capa.hidden) capaFija(); });
+  const sube = x => x >= 1 ? 1 : 1 + 2.2 * Math.pow(x - 1, 3) + 1.2 * Math.pow(x - 1, 2);
+  const quieto = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const enCam = (P, X) => V.add(V.add(V.add(V.mul(P.r1, X[0]), V.mul(P.r2, X[1])), V.mul(P.r3, X[2])), P.t);   // clip → cámara
+  const aClip = (P, Y) => { const d = V.add(Y, V.mul(P.t, -1)); return [V.dot(P.r1, d), V.dot(P.r2, d), V.dot(P.r3, d)]; };   // cámara → clip
+  const mezcla = (A, B, k) => A.map((a, i) => V.add(a, V.mul(V.add(B[i], V.mul(a, -1)), k)));
+  // esquinas [arriba-izq, arriba-der, abajo-der, abajo-izq] en coordenadas de la cámara (mm)
+  function cartaInicio(E) {   // pequeña y echada sobre el clip
+    const s = 0.2; return [[-1, 1], [1, 1], [1, -1], [-1, -1]].map(([a, b]) =>
+      enCam(E.P, V.add(V.add(E.c, V.mul(E.u, a * E.hw * s)), V.mul(E.v, (b + 1) * E.hh * s))));
+  }
+  function cartaFinal(E, alto) {   // parada de frente, centrada, de `alto` veces el alto de la pantalla
+    const D = enCam(E.P, E.c)[2], asp = imgCarta.width / imgCarta.height || 0.611;
+    let h = alto * E.foto.height * D / E.P.f, w = h * asp; const wmax = 0.96 * E.foto.width * D / E.P.f;
+    if (w > wmax) { h *= wmax / w; w = wmax; }
+    return [[-w / 2, -h / 2, D], [w / 2, -h / 2, D], [w / 2, h / 2, D], [-w / 2, h / 2, D]];
+  }
+  function ponerCapa(X, P, ancho) {   // proyecta las 4 esquinas y deforma la imagen de la carta con matrix3d
+    if (X.some(p => p[2] < 5)) { capa.hidden = true; return; }
+    const r = lienzo.getBoundingClientRect(), pr = lienzo.parentNode.getBoundingClientRect(), s = r.width / ancho;
+    const pts = X.map(p => [r.left - pr.left + (P.f * p[0] / p[2] + P.cx) * s, r.top - pr.top + (P.f * p[1] / p[2] + P.cy) * s]);
+    const w = imgCarta.width, h = imgCarta.height, H = homografia4([[0, 0], [w, 0], [w, h], [0, h]], pts);
+    capa.style.transform = `matrix3d(${H[0]},${H[3]},0,${H[6]},${H[1]},${H[4]},0,${H[7]},0,0,1,0,${H[2]},${H[5]},0,${H[8]})`;
+    capa.hidden = false;
+  }
+  // giroscopio (orientación del celular)
+  const giro = { R: null, t: 0 };
+  function rotDispositivo(al, be, ga) {   // W3C: R = Rz(alfa)·Rx(beta)·Ry(gamma), del celular al mundo
+    const r = Math.PI / 180, ca = Math.cos(al * r), sa = Math.sin(al * r), cb = Math.cos(be * r), sb = Math.sin(be * r), cg = Math.cos(ga * r), sg = Math.sin(ga * r);
+    return [[ca * cg - sa * sb * sg, -sa * cb, ca * sg + sa * sb * cg], [sa * cg + ca * sb * sg, ca * cb, sa * sg - ca * sb * cg], [-cb * sg, sb, cb * cg]];
+  }
+  window.addEventListener('deviceorientation', e => { if (e.alpha == null || e.beta == null || e.gamma == null) return; giro.R = rotDispositivo(e.alpha, e.beta, e.gamma); giro.t = performance.now(); });
+  function pedirGiro() { try { if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') DeviceOrientationEvent.requestPermission().catch(() => {}); } catch (e) {} }
+  const vertical = () => { try { return !screen.orientation || !screen.orientation.angle; } catch (e) { return true; } };
+  function giroDesde(R0) {   // cuánto giró el celular desde que se fijó la carta, en ejes de la cámara trasera
+    const R1 = giro.R, c = [1, -1, -1], M = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) { let s = 0; for (let k = 0; k < 3; k++) s += R1[k][i] * R0[k][j]; M[i][j] = s * c[i] * c[j]; }
+    return M;
+  }
+  const porM = (M, p) => M.map(f => f[0] * p[0] + f[1] * p[1] + f[2] * p[2]);
+
+  async function mostrarCarta(E) {   // foto: la carta se levanta del clip y queda de frente
     await listaCarta; escena = E; const id = ++anim;
-    const quieto = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (quieto) { cuadro(E, 1, true); return; }
-    const t0 = performance.now(), dur = 900, ease = x => 1 + 2.2 * Math.pow(x - 1, 3) + 1.2 * Math.pow(x - 1, 2);
+    lienzo.width = E.foto.width; lienzo.height = E.foto.height; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(E.foto, 0, 0);
+    const A = cartaInicio(E), B = cartaFinal(E, 0.92);
+    capaFija = () => ponerCapa(B, E.P, E.foto.width);
+    if (quieto()) { capaFija(); return; }
+    const t0 = performance.now();
     await new Promise(fin => {
-      const paso = t => { if (id !== anim) return fin(); const x = Math.min(1, (t - t0) / dur); cuadro(E, Math.max(0, ease(x)), false); x < 1 ? requestAnimationFrame(paso) : fin(); };
+      const paso = t => { if (id !== anim) return fin(); const x = Math.min(1, (t - t0) / 900); ponerCapa(mezcla(A, B, sube(x)), E.P, E.foto.width); x < 1 ? requestAnimationFrame(paso) : fin(); };
       requestAnimationFrame(paso);
     });
-    if (id === anim) cuadro(E, 1, true);
   }
   function soloFoto(foto, res) {
-    anim++; escena = null; lienzo.width = foto.width; lienzo.height = foto.height;
+    anim++; escena = null; capa.hidden = true; capaFija = null; lienzo.width = foto.width; lienzo.height = foto.height;
     ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(foto, 0, 0);
     for (const r of res) { ctx.lineWidth = Math.max(2, foto.width / 320); ctx.strokeStyle = '#F59E0B'; ctx.beginPath(); r.outer.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.stroke(); }
   }
@@ -1204,8 +1255,8 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
       const s = Math.min(1, 960 / Math.max(video.videoWidth, video.videoHeight));
       const w = Math.round(video.videoWidth * s), h = Math.round(video.videoHeight * s);
       const g = document.createElement('canvas'); g.width = w; g.height = h;
-      vivo = { stream, w, h, g, gx: g.getContext('2d', { willReadFrequently: true }), E: null, Eult: null, num: null, previo: null, visto: 0, k: 0, t: performance.now() };
-      lienzo.width = w; lienzo.height = h; escena = null; rotuloVivo(true);
+      vivo = { stream, w, h, g, gx: g.getContext('2d', { willReadFrequently: true }), X: null, Pahora: null, num: null, previo: null, visto: 0 };
+      lienzo.width = w; lienzo.height = h; escena = null; capa.hidden = true; capaFija = null; rotuloVivo(true);
       estado('Apunta al QR de atrás de tu clip', 'A unos 15 cm, que se vea entero y enfocado');
       requestAnimationFrame(pintarVivo); cicloVivo();
     } catch (e) {
@@ -1214,7 +1265,15 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
   }
   function pararVivo() {
     if (!vivo) return;
-    vivo.stream.getTracks().forEach(t => t.stop()); vivo = null; video.srcObject = null; rotuloVivo(false);
+    vivo.stream.getTracks().forEach(t => t.stop()); vivo = null; video.srcObject = null; rotuloVivo(false); capa.hidden = true;
+  }
+  function anclar(Z, r) {   // primera lectura: fija la carta en el espacio; después solo sigue al clip (si no hay giroscopio)
+    const E = prepararEscena({ width: Z.w, height: Z.h }, r);
+    if (Z.X) { Z.Pahora = E.P; return; }
+    const conGiro = !!giro.R && performance.now() - giro.t < 1000 && vertical();
+    Z.X = { E, A: cartaInicio(E), B: cartaFinal(E, 1.2), P0: E.P, R0: conGiro ? giro.R : null, t0: performance.now() };
+    escena = E;
+    estado(`¡Clip N.º ${r.num}! Bienvenido a Cara Negra`, conGiro ? 'Inclina el celular arriba o abajo para recorrer la carta · tócala para pedir' : 'Toca la carta para elegir tu pedido');
   }
   async function cicloVivo() {
     const Z = vivo; if (!Z) return;
@@ -1224,7 +1283,7 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
     if (vivo !== Z) return;
     if (q && q.num) {
       if (Z.num !== q.num) { Z.num = q.num; ponerClip(q.num); estado(`¡Clip N.º ${q.num}! Bienvenido a Cara Negra`, 'Toca la carta para elegir tu pedido'); $('abrir-carta').hidden = false; }
-      if (q.H) { Z.E = Z.Eult = prepararEscena({ width: Z.w, height: Z.h }, q); escena = Z.E; }
+      if (q.H) anclar(Z, q);
       Z.visto = performance.now(); Z.previo = q.num; setTimeout(cicloVivo, 30); return;
     }
     if (q && q.ajeno && !Z.num) { estado('Ese QR no es de un clip Cara Negra', 'Apunta al QR de atrás de tu clip'); setTimeout(cicloVivo, 60); return; }
@@ -1236,23 +1295,31 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
       const r = ok[0];
       if (Z.num === r.num || Z.previo === r.num) {          // dos lecturas iguales seguidas: confirmado
         if (Z.num !== r.num) { Z.num = r.num; ponerClip(r.num); estado(`¡Clip N.º ${r.num}! Bienvenido a Cara Negra`, 'Toca la carta para elegir tu pedido'); $('abrir-carta').hidden = false; }
-        Z.E = Z.Eult = prepararEscena({ width: Z.w, height: Z.h }, r); Z.visto = ahora; escena = Z.E;
+        anclar(Z, r); Z.visto = ahora;
       } else if (!Z.num) estado('Leyendo el clip…', 'Mantén el celular quieto un momento');
       Z.previo = r.num;
     } else {
       Z.previo = null;
-      if (Z.num && ahora - Z.visto > 2500) { Z.E = null; Z.num = null; escena = null; estado('Buscando el clip…', 'Apunta al QR de atrás de tu clip'); $('abrir-carta').hidden = !clip; }
+      if (Z.num && !Z.X && ahora - Z.visto > 2500) { Z.num = null; escena = null; estado('Buscando el clip…', 'Apunta al QR de atrás de tu clip'); $('abrir-carta').hidden = !clip; }
       else if (!Z.num) estado('Apunta al QR de atrás de tu clip', 'A unos 15 cm, que se vea entero y enfocado');
     }
     setTimeout(cicloVivo, 30);
   }
   function pintarVivo(t) {
     const Z = vivo; if (!Z) return;
-    const dt = Math.min(100, t - Z.t); Z.t = t;
-    Z.k = Math.max(0, Math.min(1, Z.k + (Z.E ? 1 : -1) * dt / 800));
-    const E = Z.E || Z.Eult;
-    if (E && texChica) cuadro(E, suave(Z.k), false, video);
-    else { lienzo.width === Z.w || (lienzo.width = Z.w); lienzo.height === Z.h || (lienzo.height = Z.h); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(video, 0, 0, Z.w, Z.h); }
+    lienzo.width === Z.w || (lienzo.width = Z.w); lienzo.height === Z.h || (lienzo.height = Z.h);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(video, 0, 0, Z.w, Z.h);
+    const X = Z.X;
+    if (X && imgCarta.width) {
+      let pts = mezcla(X.A, X.B, quieto() ? 1 : sube(Math.min(1, (performance.now() - X.t0) / 900)));
+      if (X.R0 && giro.R) { const M = giroDesde(X.R0); pts = pts.map(p => porM(M, p)); }   // carta fija en el espacio
+      else if (Z.Pahora) {   // sin giroscopio: sigue al clip, suavizado
+        const meta = pts.map(p => enCam(Z.Pahora, aClip(X.P0, p)));
+        X.suave = X.suave ? X.suave.map((p, i) => V.add(p, V.mul(V.add(meta[i], V.mul(p, -1)), 0.3))) : meta;
+        pts = X.suave;
+      }
+      ponerCapa(pts, X.P0, Z.w);
+    }
     requestAnimationFrame(pintarVivo);
   }
   async function sinCamara() {   // sin permiso o sin cámara (por ejemplo, dentro de Claude): ejemplo + otras opciones
@@ -1268,9 +1335,9 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
     pararVivo(); anim++; $('pantalla').hidden = true; document.body.style.overflow = '';
     window.scrollTo(0, Math.max(0, $('carta').getBoundingClientRect().top + window.scrollY - 8));
   }
-  $('btn-vivo').addEventListener('click', iniciarVivo);
+  $('btn-vivo').addEventListener('click', () => { pedirGiro(); iniciarVivo(); });
   ['abrir-carta', 'sin-escanear', 'cerrar-pantalla'].forEach(id => $(id).addEventListener('click', cerrarPantalla));
-  $('re-escanear').addEventListener('click', abrirPantalla);
+  $('re-escanear').addEventListener('click', () => { pedirGiro(); abrirPantalla(); });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) pararVivo(); else if (!$('pantalla').hidden && !vivo && !ocupado && !escena) iniciarVivo();
   });
