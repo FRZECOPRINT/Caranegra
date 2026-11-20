@@ -211,6 +211,10 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
       <h2>La carta</h2>
       <span class="clip-chip" id="clip-chip" hidden></span>
     </div>
+    <div class="promo" id="bienvenida" hidden>
+      <b>N.º <span id="bienvenida-num"></span></b>
+      <span>¡Bienvenido a Cara Negra! Tu clip ya está registrado en tu pedido. Elige lo que quieras y envíalo por WhatsApp.</span>
+    </div>
     <div class="promo" id="promo" hidden>
       <b>2 x 30</b>
       <span>Hoy es Jueves de Cara Negra: 2 hamburguesas de cordero candaraveño clásicas por S/ 30. Se descuenta solo en tu pedido.</span>
@@ -1059,7 +1063,11 @@ details.original img { margin-top: 10px; border-radius: 10px; display: block; }
   });
 
   ['in-camara', 'in-galeria'].forEach(id => $(id).addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) escanear(f, false); }));
-  abrirPantalla();   // al entrar (por ejemplo, desde el enlace CARANEGRA.PE), la cámara se enciende sola
+  // Si se entra por el QR del clip (…/?c=7), la página ya sabe qué clip es: va directo a la carta.
+  const cURL = parseInt(new URLSearchParams(location.search).get('c'), 10);
+  if (cURL > 0 && cURL < 100000) {
+    ponerClip(cURL); $('bienvenida-num').textContent = cURL; $('bienvenida').hidden = false;
+  } else abrirPantalla();   // sin QR: la cámara se enciende sola para leer el clip
 })();
 </script>
 
